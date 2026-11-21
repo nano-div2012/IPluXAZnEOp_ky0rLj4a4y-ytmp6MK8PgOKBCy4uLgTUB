@@ -1,11 +1,960 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <meta http-equiv="Refresh" content="0; url='https://example.com/'" />
-    <script>window.location.replace("https://example.com/");</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Race Battle Adventure</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background: #101820;
+    color: white;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+    touch-action: none;
+}
+
+canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+}
+
+#menu {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg,#102b20,#162c45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 10;
+}
+
+.title {
+    font-size: clamp(30px,8vw,60px);
+    font-weight: 900;
+    text-align: center;
+    color: #ffcc36;
+    text-shadow: 0 4px 15px #000;
+}
+
+.subtitle {
+    margin: 10px 0 25px;
+    color: #ddd;
+}
+
+.menu-box {
+    width: min(420px,95%);
+    background: rgba(0,0,0,.5);
+    border: 1px solid #ffffff30;
+    padding: 20px;
+    border-radius: 20px;
+}
+
+select, button {
+    font-size: 16px;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+}
+
+select {
+    width: 100%;
+    margin-bottom: 12px;
+    background: #253c50;
+    color: white;
+}
+
+.menu-button {
+    width: 100%;
+    margin: 7px 0;
+    font-weight: bold;
+    background: #ffbd27;
+    color: #171717;
+}
+
+.menu-button:active {
+    transform: scale(.97);
+}
+
+#hud {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    display: none;
+}
+
+.top-hud {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px;
+    gap: 8px;
+}
+
+.panel {
+    background: rgba(0,0,0,.65);
+    padding: 10px;
+    border-radius: 12px;
+    min-width: 90px;
+    font-size: 13px;
+}
+
+.health-container {
+    width: 130px;
+    height: 12px;
+    background: #333;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+#health {
+    height: 100%;
+    width: 100%;
+    background: #43e45c;
+    transition: width .15s;
+}
+
+#weaponText {
+    color: #ffdb50;
+}
+
+.controls {
+    position: absolute;
+    bottom: 15px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    pointer-events: auto;
+}
+
+.control-group {
+    display: flex;
+    gap: 8px;
+    align-items: end;
+}
+
+.control-button {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    background: rgba(20,20,20,.65);
+    color: white;
+    border: 2px solid #ffffff90;
+    font-size: 24px;
+    font-weight: bold;
+    user-select: none;
+    touch-action: none;
+}
+
+.control-button.active {
+    background: #ffb82e;
+    color: black;
+}
+
+.big-button {
+    width: 75px;
+    height: 75px;
+}
+
+#pauseBtn {
+    position: absolute;
+    top: 80px;
+    right: 12px;
+    pointer-events: auto;
+    background: #ffffff30;
+    color: white;
+}
+
+#message {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    text-align: center;
+    font-size: 30px;
+    font-weight: bold;
+    text-shadow: 0 3px 5px black;
+    display: none;
+    z-index: 5;
+    pointer-events: none;
+}
+
+#result {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgba(0,0,0,.85);
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.result-box {
+    padding: 25px;
+    background: #182b3b;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+}
+
+.result-box h1 {
+    color: #ffd33d;
+    margin-bottom: 15px;
+}
+
+.result-box button {
+    width: 100%;
+    margin-top: 10px;
+    background: #ffc52f;
+}
+
+@media (orientation: landscape) {
+    .controls {
+        bottom: 5px;
+    }
+
+    .control-button {
+        width: 58px;
+        height: 58px;
+    }
+
+    .top-hud {
+        padding: 8px;
+    }
+}
+</style>
 </head>
-<body style="margin:0;padding:0;background-color:#ffffff;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;">
-    Redirecting...
-</body>
-</html>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="menu">
+    <div class="title">🏎️ RACE BATTLE<br>ADVENTURE</div>
+    <div class="subtitle">Ultimate Racing Challenge</div>
+
+    <div class="menu-box">
+        <select id="trackSelect">
+            <option value="forest">🌲 Hutan Misterius</option>
+            <option value="mountain">⛰️ Pegunungan</option>
+            <option value="beach">🏖️ Pantai</option>
+            <option value="city">🏙️ Kota</option>
+        </select>
+
+        <select id="vehicleSelect">
+            <option value="0">Roadster</option>
+            <option value="1">Sport GT</option>
+            <option value="2">Rally Racer</option>
+            <option value="3">Super Car</option>
+            <option value="4">Offroad Beast</option>
+            <option value="5">Hyper Racer</option>
+        </select>
+
+        <button class="menu-button" onclick="startGame('battle')">
+            ⚔️ RACE BATTLE
+        </button>
+
+        <button class="menu-button" onclick="startGame('time')">
+            ⏱️ TIME CHALLENGE
+        </button>
+
+        <div style="text-align:center;margin-top:15px">
+            🪙 Coins: <span id="coinDisplay">0</span>
+        </div>
+    </div>
+</div>
+
+<div id="hud">
+    <div class="top-hud">
+        <div class="panel">
+            ❤️ HEALTH
+            <div class="health-container">
+                <div id="health"></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            🪙 <span id="coins">0</span>
+        </div>
+
+        <div class="panel">
+            ⏱️ <span id="timer">0.0</span>
+        </div>
+
+        <div class="panel">
+            🏁 <span id="distance">0</span>%
+        </div>
+    </div>
+
+    <button id="pauseBtn" class="control-button">Ⅱ</button>
+
+    <div class="controls">
+        <div class="control-group">
+            <button class="control-button" id="left">◀</button>
+            <button class="control-button" id="right">▶</button>
+            <button class="control-button" id="brake">▼</button>
+        </div>
+
+        <div class="control-group">
+            <button class="control-button big-button" id="weapon">⚡</button>
+            <button class="control-button big-button" id="gas">▲</button>
+        </div>
+    </div>
+</div>
+
+<div id="message"></div>
+
+<div id="result">
+    <div class="result-box">
+        <h1 id="resultTitle">FINISH!</h1>
+        <p id="resultText"></p>
+        <button onclick="backMenu()">🏠 MENU UTAMA</button>
+        <button onclick="restartGame()">🔄 MAIN LAGI</button>
+    </div>
+</div>
+
+<script>
+"use strict";
+
+/* ==============================
+   CANVAS
+================================ */
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let W = 0, H = 0;
+
+function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+}
+
+window.addEventListener("resize", resize);
+resize();
+
+/* ==============================
+   GAME DATA
+================================ */
+
+const vehicles = [
+    {name:"Roadster", speed:170, turn:5, hp:100, color:"#e53935"},
+    {name:"Sport GT", speed:190, turn:4.8, hp:110, color:"#2196f3"},
+    {name:"Rally Racer", speed:165, turn:6.5, hp:140, color:"#ff9800"},
+    {name:"Super Car", speed:220, turn:4.3, hp:95, color:"#9c27b0"},
+    {name:"Offroad Beast", speed:150, turn:5.5, hp:180, color:"#4caf50"},
+    {name:"Hyper Racer", speed:240, turn:5, hp:100, color:"#ffeb3b"}
+];
+
+const tracks = {
+    forest: {
+        name:"Hutan",
+        sky:"#87c7f4",
+        ground:"#28643b",
+        road:"#454545",
+        scenery:"tree"
+    },
+    mountain: {
+        name:"Pegunungan",
+        sky:"#a7d8f4",
+        ground:"#777c7d",
+        road:"#505050",
+        scenery:"mountain"
+    },
+    beach: {
+        name:"Pantai",
+        sky:"#74c9ed",
+        ground:"#d9c18a",
+        road:"#696969",
+        scenery:"palm"
+    },
+    city: {
+        name:"Kota",
+        sky:"#b8d8ee",
+        ground:"#606b61",
+        road:"#484848",
+        scenery:"building"
+    }
+};
+
+/* ==============================
+   GAME STATE
+================================ */
+
+let game = {};
+let running = false;
+let paused = false;
+let lastTime = 0;
+let frame = 0;
+
+let savedCoins = Number(localStorage.getItem("rbaCoins") || 0);
+
+document.getElementById("coinDisplay").textContent = savedCoins;
+
+function startGame(mode) {
+    const trackName = document.getElementById("trackSelect").value;
+    const vehicleId = Number(document.getElementById("vehicleSelect").value);
+
+    const vehicle = vehicles[vehicleId];
+
+    game = {
+        mode,
+        track: tracks[trackName],
+        trackName,
+        vehicle,
+        player: {
+            x:0,
+            health:vehicle.hp,
+            maxHealth:vehicle.hp,
+            speed:0,
+            distance:0,
+            shield:0,
+            boost:0,
+            slow:0,
+            weapons:3
+        },
+        enemies:[],
+        objects:[],
+        coins:0,
+        time:0,
+        roadOffset:0,
+        curve:0,
+        progress:0,
+        finished:false,
+        damageCooldown:0
+    };
+
+    for(let i=0;i<3;i++) {
+        game.enemies.push({
+            x:(Math.random()*1.2)-0.6,
+            distance:200+i*240,
+            speed:100+Math.random()*50,
+            health:100,
+            slow:0,
+            color:["#222","#6b1720","#253d8b"][i]
+        });
+    }
+
+    createObjects();
+
+    document.getElementById("menu").style.display="none";
+    document.getElementById("hud").style.display="block";
+    document.getElementById("result").style.display="none";
+
+    running=true;
+    paused=false;
+    lastTime=performance.now();
+
+    requestAnimationFrame(loop);
+}
+
+/* ==============================
+   OBJECTS
+================================ */
+
+function createObjects() {
+    game.objects=[];
+
+    for(let i=0;i<45;i++) {
+        const type=Math.random();
+
+        game.objects.push({
+            distance:150+i*100+Math.random()*40,
+            x:(Math.random()*1.5)-0.75,
+            type:type<0.45?"coin":
+                 type<0.65?"weapon":
+                 type<0.8?"water":"rock",
+            collected:false
+        });
+    }
+}
+
+/* ==============================
+   INPUT
+================================ */
+
+const input={
+    left:false,
+    right:false,
+    gas:false,
+    brake:false,
+    weapon:false
+};
+
+function bindButton(id,key) {
+    const button=document.getElementById(id);
+
+    button.addEventListener("pointerdown",e=>{
+        e.preventDefault();
+        input[key]=true;
+        button.classList.add("active");
+        button.setPointerCapture?.(e.pointerId);
+    });
+
+    const release=()=>{
+        input[key]=false;
+        button.classList.remove("active");
+    };
+
+    button.addEventListener("pointerup",release);
+    button.addEventListener("pointercancel",release);
+    button.addEventListener("lostpointercapture",release);
+}
+
+bindButton("left","left");
+bindButton("right","right");
+bindButton("gas","gas");
+bindButton("brake","brake");
+
+document.getElementById("weapon").addEventListener("pointerdown",()=>{
+    activateWeapon();
+});
+
+document.getElementById("pauseBtn").addEventListener("click",()=>{
+    paused=!paused;
+    document.getElementById("pauseBtn").textContent=paused?"▶":"Ⅱ";
+});
+
+/* ==============================
+   WEAPONS
+================================ */
+
+function activateWeapon() {
+    if(!running || paused) return;
+
+    if(game.player.weapons<=0) {
+        showMessage("NO WEAPON!");
+        return;
+    }
+
+    game.player.weapons--;
+
+    if(game.enemies.length) {
+        const enemy=game.enemies[0];
+
+        enemy.slow=3;
+        enemy.speed*=0.55;
+
+        showMessage("⚡ ENEMY SLOWED!");
+    } else {
+        game.player.boost=2;
+        showMessage("🚀 BOOST!");
+    }
+
+    sound(260,0.12);
+}
+
+/* ==============================
+   UPDATE
+================================ */
+
+function update(dt) {
+    if(!running || paused) return;
+
+    game.time+=dt;
+
+    const p=game.player;
+
+    let acceleration=0;
+
+    if(input.gas) acceleration=220;
+    if(input.brake) acceleration=-300;
+
+    p.speed+=acceleration*dt;
+
+    p.speed=Math.max(0,Math.min(p.speed,game.vehicle.speed));
+
+    if(!input.gas && !input.brake) {
+        p.speed*=Math.pow(0.96,dt*60);
+    }
+
+    if(p.boost>0) {
+        p.boost-=dt;
+        p.speed=Math.min(game.vehicle.speed*1.3,p.speed+80*dt);
+    }
+
+    if(input.left) p.x-=game.vehicle.turn*dt;
+    if(input.right) p.x+=game.vehicle.turn*dt;
+
+    p.x=Math.max(-1,Math.min(1,p.x));
+
+    p.distance+=p.speed*dt;
+    game.roadOffset+=p.speed*dt;
+
+    game.progress=Math.min(100,p.distance/5000*100);
+
+    /* Enemies */
+
+    game.enemies.forEach(enemy=>{
+        enemy.distance+=enemy.speed*dt;
+
+        if(enemy.slow>0) enemy.slow-=dt;
+
+        if(enemy.distance<p.distance-100) {
+            enemy.distance=p.distance+100;
+        }
+    });
+
+    /* Objects */
+
+    game.objects.forEach(obj=>{
+        if(obj.collected) return;
+
+        const relative=obj.distance-p.distance;
+
+        if(relative<35 && relative>-35 &&
+           Math.abs(obj.x-p.x)<0.25) {
+
+            obj.collected=true;
+
+            if(obj.type==="coin") {
+                game.coins++;
+                savedCoins++;
+                localStorage.setItem("rbaCoins",savedCoins);
+                sound(700,0.08);
+            }
+
+            if(obj.type==="weapon") {
+                p.weapons=Math.min(9,p.weapons+2);
+                showMessage("🔋 WEAPON +2");
+            }
+
+            if(obj.type==="water") {
+                p.speed*=0.65;
+            }
+
+            if(obj.type==="rock") {
+                damagePlayer(15);
+            }
+        }
+    });
+
+    /* Enemy collisions */
+
+    game.enemies.forEach(enemy=>{
+        const relative=enemy.distance-p.distance;
+
+        if(relative<25 && relative>-25 &&
+           Math.abs(enemy.x-p.x)<0.2) {
+
+            if(game.damageCooldown<=0) {
+                damagePlayer(10);
+                enemy.distance+=50;
+                game.damageCooldown=1;
+            }
+        }
+    });
+
+    game.damageCooldown=Math.max(0,game.damageCooldown-dt);
+
+    if(game.mode==="time" && game.time>=60) {
+        finishGame(true);
+    }
+
+    if(p.health<=0) {
+        finishGame(false);
+    }
+
+    if(game.progress>=100) {
+        finishGame(true);
+    }
+
+    updateHUD();
+}
+
+function damagePlayer(amount) {
+    if(game.player.shield>0) return;
+
+    game.player.health-=amount;
+    game.player.health=Math.max(0,game.player.health);
+
+    sound(100,0.15);
+    showMessage("💥 DAMAGE!");
+}
+
+/* ==============================
+   DRAW
+================================ */
+
+function draw() {
+    const track=game.track;
+    const p=game.player;
+
+    ctx.clearRect(0,0,W,H);
+
+    /* Sky */
+
+    ctx.fillStyle=track.sky;
+    ctx.fillRect(0,0,W,H*0.45);
+
+    /* Ground */
+
+    ctx.fillStyle=track.ground;
+    ctx.fillRect(0,H*0.45,W,H*0.55);
+
+    /* Scenery */
+
+    drawScenery();
+
+    /* Road */
+
+    drawRoad();
+
+    /* Objects */
+
+    drawObjects();
+
+    /* Enemies */
+
+    drawEnemies();
+
+    /* Player */
+
+    drawPlayer();
+
+    /* HUD */
+
+    if(p.shield>0) {
+        ctx.strokeStyle="#64eaff";
+        ctx.lineWidth=4;
+        ctx.beginPath();
+        ctx.arc(W/2,H*0.75,45,0,Math.PI*2);
+        ctx.stroke();
+    }
+}
+
+function drawRoad() {
+    const roadCenter=W/2+game.player.x*W*0.12;
+    const roadWidth=W*0.55;
+
+    ctx.fillStyle=game.track.road;
+
+    ctx.beginPath();
+    ctx.moveTo(roadCenter-roadWidth/2,H*0.43);
+    ctx.lineTo(roadCenter+roadWidth/2,H*0.43);
+    ctx.lineTo(W*0.95,H);
+    ctx.lineTo(W*0.05,H);
+    ctx.closePath();
+    ctx.fill();
+
+    /* Road edges */
+
+    ctx.strokeStyle="#ffffff";
+    ctx.lineWidth=4;
+
+    ctx.beginPath();
+    ctx.moveTo(roadCenter-roadWidth/2,H*0.43);
+    ctx.lineTo(W*0.05,H);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(roadCenter+roadWidth/2,H*0.43);
+    ctx.lineTo(W*0.95,H);
+    ctx.stroke();
+
+    /* Road center markings */
+
+    ctx.strokeStyle="#ffdf4a";
+    ctx.lineWidth=3;
+    ctx.setLineDash([25,20]);
+
+    ctx.beginPath();
+    ctx.moveTo(roadCenter,H*0.43);
+    ctx.lineTo(W/2,H);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+}
+
+function drawScenery() {
+    const scenery=game.track.scenery;
+
+    for(let i=0;i<14;i++) {
+        const y=(i*90+game.roadOffset*0.3)%H;
+        const scale=0.3+y/H;
+
+        const x1=W*0.05;
+        const x2=W*0.95;
+
+        drawSceneryItem(x1,y,scale,scenery);
+        drawSceneryItem(x2,y,scale,scenery);
+    }
+}
+
+function drawSceneryItem(x,y,s,type) {
+    if(type==="tree") {
+        ctx.fillStyle="#70452b";
+        ctx.fillRect(x-5*s,y,10*s,35*s);
+
+        ctx.fillStyle="#164f25";
+        ctx.beginPath();
+        ctx.arc(x,y-10*s,25*s,0,Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle="#246d35";
+        ctx.beginPath();
+        ctx.arc(x-12*s,y-20*s,18*s,0,Math.PI*2);
+        ctx.fill();
+    }
+
+    else if(type==="mountain") {
+        ctx.fillStyle="#777";
+        ctx.beginPath();
+        ctx.moveTo(x-40*s,y+20*s);
+        ctx.lineTo(x,y-50*s);
+        ctx.lineTo(x+40*s,y+20*s);
+        ctx.fill();
+    }
+
+    else if(type==="palm") {
+        ctx.fillStyle="#76542e";
+        ctx.fillRect(x-3*s,y,6*s,40*s);
+
+        ctx.strokeStyle="#267438";
+        ctx.lineWidth=5*s;
+
+        for(let i=0;i<5;i++) {
+            ctx.beginPath();
+            ctx.moveTo(x,y);
+            ctx.lineTo(x+Math.cos(i*1.3)*35*s,
+                      y-25*s+Math.sin(i*1.3)*25*s);
+            ctx.stroke();
+        }
+    }
+
+    else {
+        ctx.fillStyle="#657b8a";
+        ctx.fillRect(x-20*s,y-30*s,40*s,50*s);
+
+        ctx.fillStyle="#ffdf78";
+
+        for(let i=0;i<3;i++) {
+            ctx.fillRect(x-12*s+i*12*s,y-20*s,6*s,8*s);
+        }
+    }
+}
+
+function drawObjects() {
+    game.objects.forEach(obj=>{
+        if(obj.collected) return;
+
+        const relative=obj.distance-game.player.distance;
+
+        if(relative<0 || relative>700) return;
+
+        const depth=1-relative/700;
+        const y=H*0.43+depth*H*0.57;
+
+        const roadWidth=W*0.55*depth;
+        const x=W/2+obj.x*roadWidth;
+
+        const size=12+depth*25;
+
+        if(obj.type==="coin") {
+            ctx.fillStyle="#ffd52b";
+            ctx.beginPath();
+            ctx.arc(x,y,size/2,0,Math.PI*2);
+            ctx.fill();
+        }
+
+        if(obj.type==="weapon") {
+            ctx.fillStyle="#48eaff";
+            ctx.fillRect(x-size/2,y-size/2,size,size);
+        }
+
+        if(obj.type==="water") {
+            ctx.fillStyle="#399ee9";
+            ctx.beginPath();
+            ctx.ellipse(x,y,size*1.2,size*.5,0,0,Math.PI*2);
+            ctx.fill();
+        }
+
+        if(obj.type==="rock") {
+            ctx.fillStyle="#888";
+            ctx.beginPath();
+            ctx.moveTo(x-size,y);
+            ctx.lineTo(x,y-size);
+            ctx.lineTo(x+size,y);
+            ctx.lineTo(x+size*.5,y+size*.5);
+            ctx.closePath();
+            ctx.fill();
+        }
+    });
+}
+
+function drawEnemies() {
+    game.enemies.forEach(enemy=>{
+        const relative=enemy.distance-game.player.distance;
+
+        if(relative<0 || relative>600) return;
+
+        const depth=1-relative/600;
+        const y=H*0.43+depth*H*0.57;
+
+        const x=W/2+enemy.x*W*0.35*depth;
+        const size=25+depth*60;
+
+        drawCar(x,y,size,enemy.color);
+    });
+}
+
+function drawPlayer() {
+    const x=W/2+game.player.x*W*0.2;
+    const y=H*0.78;
+
+    drawCar(x,y,Math.min(W*0.18,90),game.vehicle.color);
+}
+
+function drawCar(x,y,size,color) {
+    ctx.fillStyle="#0005";
+    ctx.beginPath();
+    ctx.ellipse(x,y+size*.35,size*.55,size*.2,0,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle=color;
+
+    ctx.beginPath();
+    ctx.roundRect(
+        x-size*.35,
+        y-size*.6,
+        size*.7,
+        size,
+        size*.15
+    );
+    ctx.fill();
+
+    /* Windows */
+
+    ctx.fillStyle="#aee8ff";
+
+    ctx.beginPath();
+    ctx.roundRect(
+        x-size*.23,
+        y-size*.35,
+        size*.46,
+        size*.3,
+        size*.08
+    );
+    ctx.fill();
+
+    /* Wheels */
+
+    ctx.fillStyle="#171717";
+
+    ctx.fillRect(x-size*.42,y-size*.35,size*.12,size*.25);
+    ctx.fillRect(x+size*.3,y-size*.35,size*.12,size*.25);
+
+    ctx.fillRect(x-size*.42,y+size*.15,size*.12,size*.25);
+    ctx.fillRect(x+size*.3,y+size*.15,size*.
